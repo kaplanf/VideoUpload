@@ -42,7 +42,7 @@ public class ServiceGenerator {
 
                 Request.Builder requestBuilder = original.newBuilder()
                         .header("authorization", "Bearer 7fc0cf8dadac8586f327027ee22805178f369cb7");
-                requestBuilder.header("content-type", "multipart/form-data");
+                requestBuilder.header("content-type", "application/json charset=UTF-8");
                 requestBuilder.method(original.method(), original.body());
 
                 Request request = requestBuilder.build();

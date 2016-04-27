@@ -6,7 +6,9 @@ import android.media.ThumbnailUtils;
 import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Log;
+import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.VolleyError;
@@ -19,6 +21,7 @@ import com.kaplan.videouploadapp.restful.FileUploadService;
 import com.kaplan.videouploadapp.restful.RestClient;
 import com.kaplan.videouploadapp.restful.ServiceGenerator;
 import com.kaplan.videouploadapp.restful.model.VideoUploadModel;
+import com.kaplan.videouploadapp.restful.model.VideoUploadResponse;
 import com.kaplan.videouploadapp.util.NetworkConstants;
 import com.koushikdutta.async.http.AsyncHttpClient;
 import com.koushikdutta.async.http.AsyncHttpPost;
@@ -52,7 +55,6 @@ import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
-import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -75,6 +77,12 @@ public class ThumbNailPreviewFragment extends BaseFragment {
 
     @ViewById(R.id.thumbnailImageview)
     ImageView thumbnailImageview;
+
+    @ViewById(R.id.thumbnailVideoInfoText)
+    TextView thumbnailVideoInfoText;
+
+    @ViewById(R.id.thumbnailSendText)
+    TextView thumbnailSendText;
 
     private byte[] data;
     private String bitmapString;
@@ -162,6 +170,7 @@ public class ThumbNailPreviewFragment extends BaseFragment {
     }
 
     private void retrofitPostRequest(String path) {
+        showProgressDialog();
         FileUploadService service =
                 ServiceGenerator.createService(FileUploadService.class);
 
@@ -169,7 +178,7 @@ public class ThumbNailPreviewFragment extends BaseFragment {
 
         RequestBody media =
                 RequestBody.create(
-                        MediaType.parse("video/mp4"), path);
+                        MediaType.parse("video/mp4"), new File(path));
 
         MultipartBody.Part videoBody =
                 MultipartBody.Part.createFormData("media", file.getName(), media);
@@ -178,17 +187,23 @@ public class ThumbNailPreviewFragment extends BaseFragment {
         model.file = file;
         model.baseString = bitmapString;
 
-        Call<ResponseBody> call = service.upload(videoBody, bitmapString);
-        call.enqueue(new Callback<ResponseBody>() {
+        Call<VideoUploadResponse> call = service.upload(videoBody, bitmapString);
+        call.enqueue(new Callback<VideoUploadResponse>() {
             @Override
-            public void onResponse(Call<ResponseBody> call,
-                                   Response<ResponseBody> response) {
-                Log.v("Upload", "success");
+            public void onResponse(Call<VideoUploadResponse> call, Response<VideoUploadResponse> response) {
+                VideoUploadResponse videoUploadResponse = response.body();
+                String id = "Id of the video is : " + videoUploadResponse.id + "\n\n";
+                String photoLink = "Link to the thumbnail of the video is: " + videoUploadResponse.thumbnail + "\n\n";
+                String videoLink = "Link to the video is: " + videoUploadResponse.media + "\n\n";
+                String total = id + photoLink + videoLink;
+                thumbnailSendText.setVisibility(View.INVISIBLE);
+                thumbnailVideoInfoText.setText(total);
+                hideProgressDialog();
             }
 
             @Override
-            public void onFailure(Call<ResponseBody> call, Throwable t) {
-                Log.e("Upload error:", t.getMessage());
+            public void onFailure(Call<VideoUploadResponse> call, Throwable t) {
+                hideProgressDialog();
             }
         });
     }
